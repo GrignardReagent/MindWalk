@@ -1,5 +1,7 @@
 # MindWalk
 
+中文 | [English](README.en.md)
+
 边走边说，录音转成文字后整理成思维导图。默认通过爱丁堡大学的 ELM 调用模型，也兼容其他 OpenAI 格式的接口。
 
 ## 启动
