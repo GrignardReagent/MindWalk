@@ -4,21 +4,22 @@
 <style>
 /* Layout: a trail map fills the screen; the thumb-reach dock holds the one big control. Recording takes over the whole screen as a single tap target. */
 :root {
-  --bg: #e9f0ee; --panel: #f8fbfa; --ink: #10312f; --muted: #557370; --line: #c9d8d5; --contour: #dbe6e3;
-  --accent: #d9480f; --on-accent: #ffffff;
-  --b0: #0b7285; --b1: #5c7f0a; --b2: #b35c00; --b3: #7048b6; --b4: #c2255c; --b5: #2b6cb0;
+  /* Palette: space indigo #22223b, dusty grape #4a4e69, lilac ash #9a8c98, almond silk #c9ada7, parchment #f2e9e4 */
+  --bg: #f2e9e4; --panel: #f9f4f1; --ink: #22223b; --muted: #4a4e69; --line: #c9ada7; --contour: #e7dad3;
+  --accent: #4a4e69; --on-accent: #f2e9e4;
+  --b0: #4a4e69; --b1: #7d5d56; --b2: #56627f; --b3: #8a5a6b; --b4: #6e6370;
   --display: "Bricolage Grotesque", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
   --body: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0d1c1e; --panel: #142729; --ink: #e6f1ef; --muted: #93aeaa; --line: #2b4447; --contour: #16292c;
-  --accent: #ff7a33; --on-accent: #1c0b00;
-  --b0: #4cc3d9; --b1: #a7cf4a; --b2: #f2a03d; --b3: #b69cf0; --b4: #f2709c; --b5: #74b3f0; color-scheme: dark;
+  --bg: #22223b; --panel: #2b2b47; --ink: #f2e9e4; --muted: #ab9eaa; --line: #4a4e69; --contour: #2a2a45;
+  --accent: #c9ada7; --on-accent: #22223b;
+  --b0: #a3a7c2; --b1: #c9ada7; --b2: #8fa3c4; --b3: #d8a3b4; --b4: #b3a1b0; color-scheme: dark;
 } }
 :root[data-theme="dark"] {
-  --bg: #0d1c1e; --panel: #142729; --ink: #e6f1ef; --muted: #93aeaa; --line: #2b4447; --contour: #16292c;
-  --accent: #ff7a33; --on-accent: #1c0b00;
-  --b0: #4cc3d9; --b1: #a7cf4a; --b2: #f2a03d; --b3: #b69cf0; --b4: #f2709c; --b5: #74b3f0; color-scheme: dark;
+  --bg: #22223b; --panel: #2b2b47; --ink: #f2e9e4; --muted: #ab9eaa; --line: #4a4e69; --contour: #2a2a45;
+  --accent: #c9ada7; --on-accent: #22223b;
+  --b0: #a3a7c2; --b1: #c9ada7; --b2: #8fa3c4; --b3: #d8a3b4; --b4: #b3a1b0; color-scheme: dark;
 }
 html, body { height: 100%; }
 body {
@@ -213,7 +214,7 @@ footer {
   const LANG = "mindwalk.lang";
   const ACCESS = "mindwalk.key";
   const SPEECH = "mindwalk.speech";
-  const BRANCHES = 6;
+  const BRANCHES = 5;
 
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },

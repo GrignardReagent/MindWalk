@@ -23,7 +23,7 @@ const MIN_KEY_LENGTH = 16;
 
 const HEAD = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#d9480f"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f2e9e4" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#22223b" media="(prefers-color-scheme: dark)"><meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 *,*::before,*::after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>`;
@@ -33,12 +33,12 @@ const MANIFEST = JSON.stringify({
   short_name: "MindWalk",
   start_url: ".",
   display: "standalone",
-  background_color: "#0d1c1e",
-  theme_color: "#d9480f",
+  background_color: "#f2e9e4",
+  theme_color: "#4a4e69",
   icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml" }],
 });
 
-const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#d9480f"/><g fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"><path d="M256 256L130 140M256 256l140-90M256 256l-120 130M256 256l150 110"/></g><circle cx="256" cy="256" r="58" fill="#fff"/></svg>`;
+const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#22223b"/><g fill="none" stroke="#c9ada7" stroke-width="28" stroke-linecap="round"><path d="M256 256L130 140M256 256l140-90M256 256l-120 130M256 256l150 110"/></g><circle cx="256" cy="256" r="58" fill="#f2e9e4"/></svg>`;
 
 export function createOpenAIBackend(client) {
   async function complete(content, name, schema) {
