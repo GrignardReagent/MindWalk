@@ -1,0 +1,21 @@
+# Deploy on Render: Dashboard → New → Blueprint → pick this repository.
+# Render gives the site HTTPS (needed for the microphone) and generates ACCESS_KEY.
+services:
+  - type: web
+    name: mindwalk
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: ACCESS_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        value: https://elm.edina.ac.uk/api/v1
+      - key: OPENAI_TRANSCRIBE_MODEL
+        value: whisper-1

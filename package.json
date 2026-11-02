@@ -5,9 +5,12 @@
   "description": "Record ideas on a walk or run and watch them become a mind map.",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "openai": "^6.49.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
