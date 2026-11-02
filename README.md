@@ -46,6 +46,7 @@ bin/cloudflared tunnel --url http://localhost:8787
 
 已经做了的：
 
+- **转写模型**：默认用 `gpt-4o-transcribe`，比 `whisper-1` 准，中文尤其明显。如果接口（比如 ELM）没有这个模型，会自动改用 `whisper-1`，服务器日志里会提示一次。
 - **指定语言**：底部“识别：中文 / English / 自动”。选对语言比“自动”准，中文会输出简体和标点。
 - **上下文提示**：每段转写都带上前一句和导图里已有的词，专有名词前后写法一致。
 - **去掉幻听**：静音段常被识别成“谢谢观看”“字幕由…提供”之类，会被自动过滤。
@@ -54,7 +55,6 @@ bin/cloudflared tunnel --url http://localhost:8787
 你还可以：
 
 - 在 `TRANSCRIBE_VOCAB` 里写常说的人名和术语，用逗号分开。
-- 如果接口支持，把 `OPENAI_TRANSCRIBE_MODEL` 换成 `gpt-4o-transcribe`，中文明显更准。只有 `whisper-1` 能做漏录检查。
 - 手机别放太深的口袋，风大时把麦克风朝里。
 
 ## 精简导图
@@ -81,7 +81,7 @@ bin/cloudflared tunnel --url http://localhost:8787
 | `ACCESS_KEY` | 无 | 访问密钥，至少 16 个字符。没设时服务器只监听本机 |
 | `HOST` | `127.0.0.1` | 部署时设为 `0.0.0.0`，这时必须有 `ACCESS_KEY` |
 | `OPENAI_MODEL` | `gpt-5.6-sol` | 整理想法的模型 |
-| `OPENAI_TRANSCRIBE_MODEL` | `whisper-1` | 转写模型 |
+| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-transcribe` | 转写模型，接口没有时自动改用 `whisper-1` |
 | `TRANSCRIBE_VOCAB` | 无 | 常用人名、术语，帮助识别 |
 
 ## 已知限制

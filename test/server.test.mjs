@@ -90,41 +90,76 @@ test("tidy needs a map with nodes", async () => {
   });
 });
 
-test("the OpenAI backend sends the expected requests and reads the replies", async () => {
-  const seen = {};
+// A stand-in for the OpenAI API. `models` lists the transcription models it offers.
+async function withFakeApi(models, run) {
+  const uploads = [];
+  let chat = null;
   const fake = http.createServer((req, res) => {
     const chunks = [];
     req.on("data", (c) => chunks.push(c));
     req.on("end", () => {
-      seen[req.url] = { type: req.headers["content-type"], body: Buffer.concat(chunks).toString("latin1") };
+      const body = Buffer.concat(chunks).toString("utf8");
       res.setHeader("content-type", "application/json");
-      if (req.url === "/audio/transcriptions") return res.end(JSON.stringify({ text: "你好", duration: 12.5 }));
+      if (req.url === "/audio/transcriptions") {
+        const model = body.match(/name="model"\r\n\r\n([^\r]+)/)[1];
+        uploads.push({ type: req.headers["content-type"], body, model });
+        if (!models.includes(model)) {
+          res.statusCode = 404;
+          return res.end(JSON.stringify({ error: { message: `The model ${model} does not exist`, code: "model_not_found" } }));
+        }
+        return res.end(JSON.stringify(model === "whisper-1" ? { text: "你好", duration: 12.5 } : { text: "你好" }));
+      }
+      chat = JSON.parse(body);
       const content = JSON.stringify({ title: "T", ideas: [] });
       res.end(JSON.stringify({ choices: [{ finish_reason: "stop", message: { content } }] }));
     });
   });
   await new Promise((resolve) => fake.listen(0, "127.0.0.1", resolve));
-  const client = new OpenAI({ apiKey: "test", baseURL: `http://127.0.0.1:${fake.address().port}` });
-  const backend = createOpenAIBackend(client);
+  const client = new OpenAI({ apiKey: "test", baseURL: `http://127.0.0.1:${fake.address().port}`, maxRetries: 0 });
   try {
-    const heard = await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm", { language: "zh", hint: "跑步" });
-    assert.deepEqual(heard, { text: "你好", duration: 12.5 });
-    const upload = seen["/audio/transcriptions"];
-    assert.match(upload.type, /^multipart\/form-data/);
-    assert.match(upload.body, /filename="recording\.webm"/);
-    assert.match(upload.body, /whisper-1/);
-    assert.match(upload.body, /verbose_json/);
-    assert.match(upload.body, /name="language"\r\n\r\nzh/);
-    assert.match(Buffer.from(upload.body, "latin1").toString("utf8"), /name="prompt"\r\n\r\n以下是普通话.*跑步/);
-
-    assert.equal((await backend.organize({ title: "T", nodes: [] }, "hi")).title, "T");
-    const chat = JSON.parse(seen["/chat/completions"].body);
-    assert.equal(chat.response_format.json_schema.strict, true);
-    await backend.tidy({ title: "T", nodes: [{ id: "n1", parent: "root", text: "A" }] });
-    assert.equal(JSON.parse(seen["/chat/completions"].body).response_format.json_schema.name, "mind_map_tidy");
+    await run(client, uploads, () => chat);
   } finally {
     fake.close();
   }
+}
+
+test("transcription uses gpt-4o-transcribe with the language and context prompt", async () => {
+  await withFakeApi(["gpt-4o-transcribe", "whisper-1"], async (client, uploads) => {
+    const backend = createOpenAIBackend(client);
+    const heard = await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm", { language: "zh", hint: "跑步" });
+    assert.deepEqual(heard, { text: "你好", duration: undefined });
+    const [upload] = uploads;
+    assert.match(upload.type, /^multipart\/form-data/);
+    assert.match(upload.body, /filename="recording\.webm"/);
+    assert.equal(upload.model, "gpt-4o-transcribe");
+    assert.match(upload.body, /name="response_format"\r\n\r\njson\r/);
+    assert.doesNotMatch(upload.body, /chunking_strategy/);
+    assert.match(upload.body, /name="language"\r\n\r\nzh/);
+    assert.match(upload.body, /name="prompt"\r\n\r\n以下是普通话.*跑步/);
+
+    await backend.transcribe(Buffer.alloc(3 * 1024 * 1024), "m4a", "audio/mp4");
+    assert.match(uploads[1].body, /name="chunking_strategy"\r\n\r\nauto/);
+  });
+});
+
+test("without gpt-4o-transcribe, transcription falls back to whisper-1 and stays there", async () => {
+  await withFakeApi(["whisper-1"], async (client, uploads) => {
+    const backend = createOpenAIBackend(client);
+    assert.deepEqual(await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm"), { text: "你好", duration: 12.5 });
+    await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm");
+    assert.deepEqual(uploads.map((u) => u.model), ["gpt-4o-transcribe", "whisper-1", "whisper-1"]);
+    assert.match(uploads[1].body, /verbose_json/);
+  });
+});
+
+test("the OpenAI backend organizes and tidies with strict JSON schemas", async () => {
+  await withFakeApi([], async (client, uploads, lastChat) => {
+    const backend = createOpenAIBackend(client);
+    assert.equal((await backend.organize({ title: "T", nodes: [] }, "hi")).title, "T");
+    assert.equal(lastChat().response_format.json_schema.strict, true);
+    await backend.tidy({ title: "T", nodes: [{ id: "n1", parent: "root", text: "A" }] });
+    assert.equal(lastChat().response_format.json_schema.name, "mind_map_tidy");
+  });
 });
 
 test("silence hallucinations and prompt echoes are dropped, real words are kept", () => {

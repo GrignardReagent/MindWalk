@@ -46,6 +46,7 @@ Ideas are organized into the map about every 2 minutes, and the rest when you st
 
 Already in place:
 
+- **Model**: `gpt-4o-transcribe` by default. It's more accurate than `whisper-1`, especially for Chinese. If your provider (ELM, say) doesn't offer it, `whisper-1` takes over by itself and the server log says so once.
 - **Language**: "Speech: Chinese / English / Auto" at the bottom. Picking the language is more accurate than Auto, and Chinese comes out in simplified characters with punctuation.
 - **Context**: each clip is sent with the previous sentence and the words already on the map, so names are spelled consistently.
 - **No phantom text**: silence is often transcribed as "Thank you for watching" or subtitle credits. These are filtered out.
@@ -54,7 +55,6 @@ Already in place:
 You can also:
 
 - List names and terms you say often in `TRANSCRIBE_VOCAB`, comma separated.
-- Set `OPENAI_TRANSCRIBE_MODEL` to `gpt-4o-transcribe` if your provider offers it. It's noticeably more accurate for Chinese. Only `whisper-1` can detect missed audio.
 - Keep the phone in a shallow pocket, mic facing in when it's windy.
 
 ## Tidy map
@@ -81,7 +81,7 @@ The button in the top right switches the interface between Chinese and English. 
 | `ACCESS_KEY` | none | Access key, at least 16 characters. Without it the server only listens on this computer |
 | `HOST` | `127.0.0.1` | Set to `0.0.0.0` when deployed, which requires `ACCESS_KEY` |
 | `OPENAI_MODEL` | `gpt-5.6-sol` | Model that organizes ideas |
-| `OPENAI_TRANSCRIBE_MODEL` | `whisper-1` | Transcription model |
+| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-transcribe` | Transcription model; falls back to `whisper-1` if unavailable |
 | `TRANSCRIBE_VOCAB` | none | Names and terms you say often |
 
 ## Known limits

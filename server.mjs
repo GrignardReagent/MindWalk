@@ -16,7 +16,11 @@ const MAX_JSON_BYTES = 256 * 1024;
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 const AUDIO_EXTENSIONS = new Set(["m4a", "mp3", "mp4", "ogg", "wav", "webm"]);
 const CHAT_MODEL = process.env.OPENAI_MODEL || "gpt-5.6-sol";
-const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || "whisper-1";
+const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe";
+const FALLBACK_TRANSCRIBE_MODEL = "whisper-1";
+// Uploaded files above this size are long recordings; gpt-4o models then need
+// the server to split them at pauses instead of reading one block.
+const LONG_AUDIO_BYTES = 2 * 1024 * 1024;
 const TRANSCRIBE_VOCAB = process.env.TRANSCRIBE_VOCAB || "";
 const LANGUAGES = new Set(["zh", "en"]);
 const MIN_KEY_LENGTH = 16;
@@ -40,7 +44,8 @@ const MANIFEST = JSON.stringify({
 
 const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#22223b"/><g fill="none" stroke="#c9ada7" stroke-width="28" stroke-linecap="round"><path d="M256 256L130 140M256 256l140-90M256 256l-120 130M256 256l150 110"/></g><circle cx="256" cy="256" r="58" fill="#f2e9e4"/></svg>`;
 
-export function createOpenAIBackend(client) {
+export function createOpenAIBackend(client, { transcribeModel = TRANSCRIBE_MODEL } = {}) {
+  let model = transcribeModel;
   async function complete(content, name, schema) {
     const response = await client.chat.completions.create({
       model: CHAT_MODEL,
@@ -61,15 +66,34 @@ export function createOpenAIBackend(client) {
     // Naming the language and passing the map's words as a prompt are the two
     // cheapest accuracy gains. whisper-1 also reports the audio's length, which
     // lets the page spot gaps.
+    // If the provider lacks the configured model (ELM may not offer
+    // gpt-4o-transcribe), or rejects this request, whisper-1 takes over.
     async transcribe(audio, extension, type, { language, hint, previous } = {}) {
       const prompt = mindwalk.transcriptionPrompt(language, hint, TRANSCRIBE_VOCAB, previous);
-      const result = await client.audio.transcriptions.create({
-        file: await toFile(audio, `recording.${extension}`, { type }),
-        model: TRANSCRIBE_MODEL,
-        response_format: TRANSCRIBE_MODEL === "whisper-1" ? "verbose_json" : "json",
+      const file = await toFile(audio, `recording.${extension}`, { type });
+      const send = (name) => client.audio.transcriptions.create({
+        file,
+        model: name,
+        response_format: name === "whisper-1" ? "verbose_json" : "json",
+        ...(name !== "whisper-1" && audio.length > LONG_AUDIO_BYTES && { chunking_strategy: "auto" }),
         ...(language && { language }),
         ...(prompt && { prompt }),
       });
+      let result;
+      try {
+        result = await send(model);
+      } catch (error) {
+        const rejected = error instanceof OpenAI.NotFoundError || error instanceof OpenAI.BadRequestError
+          || error instanceof OpenAI.PermissionDeniedError;
+        if (model === FALLBACK_TRANSCRIBE_MODEL || !rejected) throw error;
+        const modelMissing = !(error instanceof OpenAI.BadRequestError)
+          || (/model/i.test(error.message) && !/audio|duration|long|file/i.test(error.message));
+        if (modelMissing) {
+          console.warn(`Transcription model ${model} is unavailable (${error.message}). Using ${FALLBACK_TRANSCRIBE_MODEL}.`);
+          model = FALLBACK_TRANSCRIBE_MODEL;
+        }
+        result = await send(FALLBACK_TRANSCRIBE_MODEL);
+      }
       return { text: cleanTranscript(result, prompt), duration: result.duration };
     },
   };

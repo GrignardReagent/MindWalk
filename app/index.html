@@ -535,6 +535,18 @@ footer {
 
   const extensionFor = (type) => (/mp4|m4a|aac/.test(type) ? "m4a" : /ogg/.test(type) ? "ogg" : /mpeg|mp3/.test(type) ? "mp3" : /wav/.test(type) ? "wav" : "webm");
 
+  // gpt-4o-transcribe doesn't report the audio length, so measure it here to
+  // compare against the time that passed and spot audio the phone missed.
+  async function audioSeconds(blob) {
+    try {
+      const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const decoded = await new Offline(1, 1, 16000).decodeAudioData(await blob.arrayBuffer());
+      return decoded.duration;
+    } catch {
+      return 0;
+    }
+  }
+
   function pickFormat() {
     return ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
   }
@@ -710,8 +722,9 @@ footer {
           headers: { "content-type": clip.type || "audio/webm", "x-file-extension": extensionFor(clip.type) },
           body: clip.blob,
         });
-        const { text, duration } = await res.json();
+        const { text, duration: reported } = await res.json();
         const wall = wallSeconds.get(clip.clip);
+        const duration = reported || (wall ? await audioSeconds(clip.blob) : 0);
         if (duration && wall && wall - duration > 20) gap = { duration, wall };
         if (text && text.trim()) {
           heard.push(text.trim());

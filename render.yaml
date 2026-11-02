@@ -18,4 +18,4 @@ services:
       - key: OPENAI_BASE_URL
         value: https://elm.edina.ac.uk/api/v1
       - key: OPENAI_TRANSCRIBE_MODEL
-        value: whisper-1
+        value: gpt-4o-transcribe
