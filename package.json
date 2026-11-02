@@ -1,0 +1,13 @@
+{
+  "name": "mindwalk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Record ideas on a walk or run and watch them become a mind map.",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "openai": "^6.49.0"
+  }
+}
