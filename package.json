@@ -5,12 +5,18 @@
   "description": "Record ideas on a walk or run and watch them become a mind map.",
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/*.test.mjs",
+    "build:app": "node scripts/build-app.mjs && cap sync android"
   },
   "dependencies": {
     "openai": "^6.49.0"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0"
   }
 }

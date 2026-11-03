@@ -25,6 +25,11 @@ const LONG_AUDIO_BYTES = 2 * 1024 * 1024;
 const TRANSCRIBE_VOCAB = process.env.TRANSCRIBE_VOCAB || "";
 const LANGUAGES = new Set(["zh", "en", "mix"]);
 const MIN_KEY_LENGTH = 16;
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET, POST",
+  "access-control-allow-headers": "content-type, x-access-key, x-file-extension",
+};
 
 const HEAD = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -33,7 +38,7 @@ const HEAD = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 *,*::before,*::after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>`;
 
-const MANIFEST = JSON.stringify({
+export const MANIFEST = JSON.stringify({
   name: "MindWalk",
   short_name: "MindWalk",
   start_url: ".",
@@ -43,7 +48,13 @@ const MANIFEST = JSON.stringify({
   icons: [{ src: "icon.svg", sizes: "any", type: "image/svg+xml" }],
 });
 
-const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#22223b"/><g fill="none" stroke="#c9ada7" stroke-width="28" stroke-linecap="round"><path d="M256 256L130 140M256 256l140-90M256 256l-120 130M256 256l150 110"/></g><circle cx="256" cy="256" r="58" fill="#f2e9e4"/></svg>`;
+export const ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#22223b"/><g fill="none" stroke="#c9ada7" stroke-width="28" stroke-linecap="round"><path d="M256 256L130 140M256 256l140-90M256 256l-120 130M256 256l150 110"/></g><circle cx="256" cy="256" r="58" fill="#f2e9e4"/></svg>`;
+
+// The phone page as a complete document. The Android app ships the same page.
+export async function renderPage() {
+  const page = await readFile(path.join(APP_DIR, "index.html"), "utf8");
+  return `${HEAD}${page}</body></html>`;
+}
 
 export function createOpenAIBackend(client, { transcribeModel = TRANSCRIBE_MODEL } = {}) {
   const rung = TRANSCRIBE_LADDER.indexOf(transcribeModel);
@@ -187,8 +198,12 @@ export function createServer({ organize, transcribe, tidy, accessKey = "" }) {
   };
 
   return http.createServer(async (req, res) => {
+    // The Android app's page is served from https://localhost, so the API
+    // allows other origins. Requests still need the access key, and no
+    // cookies are involved.
+    const cors = req.url.startsWith("/api/") ? CORS_HEADERS : {};
     const send = (status, type, body) => {
-      res.writeHead(status, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff" });
+      res.writeHead(status, { "content-type": type, "cache-control": "no-store", "x-content-type-options": "nosniff", ...cors });
       res.end(body);
     };
     const sendJson = (status, value) => send(status, "application/json", JSON.stringify(value));
@@ -196,17 +211,20 @@ export function createServer({ organize, transcribe, tidy, accessKey = "" }) {
     try {
       const url = new URL(req.url, "http://localhost");
       const { pathname } = url;
+      if (req.method === "OPTIONS" && pathname.startsWith("/api/")) {
+        res.writeHead(204, { ...cors, "access-control-max-age": "86400" });
+        return res.end();
+      }
       if (pathname.startsWith("/api/") && !allowed(req)) {
         req.resume();
         return sendJson(401, { code: "locked" });
       }
       if (req.method === "GET" && pathname === "/api/auth") {
-        res.writeHead(204, { "cache-control": "no-store" });
+        res.writeHead(204, { "cache-control": "no-store", ...cors });
         return res.end();
       }
       if (req.method === "GET" && pathname === "/") {
-        const page = await readFile(path.join(APP_DIR, "index.html"), "utf8");
-        return send(200, "text/html; charset=utf-8", `${HEAD}${page}</body></html>`);
+        return send(200, "text/html; charset=utf-8", await renderPage());
       }
       if (req.method === "GET" && pathname === "/organize.js") {
         return send(200, "text/javascript; charset=utf-8", await readFile(path.join(APP_DIR, "organize.js")));

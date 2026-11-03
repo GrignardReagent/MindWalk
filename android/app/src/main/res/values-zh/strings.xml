@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recording_channel">录音</string>
+    <string name="recording_title">MindWalk 正在录音</string>
+    <string name="recording_text">点这里打开。在 App 里结束录音。</string>
+</resources>
