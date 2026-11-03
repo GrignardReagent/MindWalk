@@ -170,7 +170,7 @@ footer {
     <select id="speechLang">
       <option value="zh" data-i18n="speechZh"></option>
       <option value="en" data-i18n="speechEn"></option>
-      <option value="auto" data-i18n="speechAuto"></option>
+      <option value="mix" data-i18n="speechMix"></option>
     </select>
     <label id="uploadLabel" class="upload"><span data-i18n="upload"></span><input id="upload" type="file" accept="audio/*,.m4a,.mp3,.wav,.webm,.ogg"></label>
     <button id="tidy" type="button" hidden data-i18n="tidy"></button>
@@ -246,7 +246,7 @@ footer {
       fail_no_api_key: "服务器还没有配置 OPENAI_API_KEY。", fail_quota: "API 额度不足。补足后点重试。",
       fail_bad_audio: "这个音频格式不能转写。支持 m4a、mp3、wav、webm、ogg。", fail_too_large: "录音超过 25 MB，无法转写。",
       fail_locked: "需要访问密钥。",
-      speechZh: "识别：中文", speechEn: "识别：English", speechAuto: "识别：自动", speechLabel: "说话用的语言",
+      speechZh: "识别：中文", speechEn: "识别：English", speechMix: "识别：中英混合", speechLabel: "说话用的语言",
       tidy: "精简导图", tidying: "正在精简导图…", tidied: (a, b) => `已精简：${a} → ${b} 个节点`, tidyFailed: "没能精简，导图没有改动。",
       undo: "撤销", undone: "已撤销",
       lockTitle: "输入访问密钥", lockBody: "密钥只存在这台手机上，只需输入一次。", lockPlaceholder: "访问密钥", unlock: "进入",
@@ -276,7 +276,7 @@ footer {
       fail_no_api_key: "The server has no OPENAI_API_KEY set.", fail_quota: "The API quota has run out. Top it up, then tap Retry.",
       fail_bad_audio: "This audio format can't be transcribed. Use m4a, mp3, wav, webm or ogg.", fail_too_large: "The recording is over 25 MB and can't be transcribed.",
       fail_locked: "An access key is needed.",
-      speechZh: "Speech: Chinese", speechEn: "Speech: English", speechAuto: "Speech: Auto", speechLabel: "Language you speak",
+      speechZh: "Speech: Chinese", speechEn: "Speech: English", speechMix: "Speech: Chinese + English", speechLabel: "Language you speak",
       tidy: "Tidy map", tidying: "Tidying the map…", tidied: (a, b) => `Tidied: ${a} → ${b} ideas`, tidyFailed: "Couldn't tidy. The map is unchanged.",
       undo: "Undo", undone: "Undone",
       lockTitle: "Enter access key", lockBody: "The key is kept on this phone, so you only enter it once.", lockPlaceholder: "Access key", unlock: "Unlock",
@@ -290,7 +290,8 @@ footer {
   };
 
   let lang = store.get(LANG) in STRINGS ? store.get(LANG) : /^zh/i.test(navigator.language) ? "zh" : "en";
-  let speechLang = ["zh", "en", "auto"].includes(store.get(SPEECH)) ? store.get(SPEECH) : lang;
+  const savedSpeech = store.get(SPEECH) === "auto" ? "mix" : store.get(SPEECH);
+  let speechLang = ["zh", "en", "mix"].includes(savedSpeech) ? savedSpeech : lang;
   let accessKey = store.get(ACCESS) || "";
   // A link like https://…/#key=… unlocks the page once; the fragment never reaches the server.
   const keyInLink = location.hash.match(/[#&]key=([^&]+)/);

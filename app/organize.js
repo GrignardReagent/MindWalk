@@ -232,7 +232,14 @@ ${describeMap(map)}`;
     let lead = terms;
     if (language === "zh") lead = `以下是普通话口述的想法，使用简体中文和标点符号。${terms ? `会提到：${terms}。` : ""}`;
     if (language === "en") lead = `Ideas dictated on a walk, with punctuation.${terms ? ` Terms: ${terms}.` : ""}`;
+    if (language === "mix") lead = `以下是中英文夹杂的口述想法，中文用简体，英文词保持英文，带标点。${terms ? `会提到：${terms}。` : ""}`;
     return [lead, before].filter(Boolean).join(" ");
+  }
+
+  // gpt-transcribe takes names and terms as a separate keyword list.
+  function transcriptionKeywords(vocabulary, hint) {
+    const words = `${vocabulary || ""},${hint || ""}`.split(/[,，、;；\n]/).map((w) => w.trim()).filter((w) => w && w.length <= 40);
+    return [...new Set(words)].slice(0, 50);
   }
 
   function removeSubtree(map, id, now) {
@@ -264,6 +271,6 @@ ${describeMap(map)}`;
 
   return {
     ROOT, DEFAULT_TITLE, RESULT_SCHEMA, TIDY_SCHEMA, emptyMap, buildPrompt, buildTidyPrompt, applyResult, applyTidy,
-    vocabularyHint, transcriptionPrompt, removeSubtree, toMarkdown,
+    vocabularyHint, transcriptionPrompt, transcriptionKeywords, removeSubtree, toMarkdown,
   };
 });

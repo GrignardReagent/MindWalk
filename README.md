@@ -46,9 +46,9 @@ bin/cloudflared tunnel --url http://localhost:8787
 
 已经做了的：
 
-- **转写模型**：默认用 `gpt-4o-transcribe`，比 `whisper-1` 准，中文尤其明显。如果接口（比如 ELM）没有这个模型，会自动改用 `whisper-1`，服务器日志里会提示一次。
-- **指定语言**：底部“识别：中文 / English / 自动”。选对语言比“自动”准，中文会输出简体和标点。
-- **上下文提示**：每段转写都带上前一句和导图里已有的词，专有名词前后写法一致。
+- **转写模型**：默认用 OpenAI 最新的 `gpt-transcribe`。接口（比如 ELM）没有它时，自动依次改用 `gpt-4o-transcribe`、`whisper-1`，服务器日志里会提示一次。
+- **指定语言**：底部“识别：中文 / English / 中英混合”。说话夹英文单词就选“中英混合”。中文会输出简体和标点。
+- **上下文和关键词**：每段转写都带上前一句，导图里已有的词和 `TRANSCRIBE_VOCAB` 作为关键词一起发送，专有名词前后写法一致。
 - **去掉幻听**：静音段常被识别成“谢谢观看”“字幕由…提供”之类，会被自动过滤。
 - **录音不丢**：每段音频先存在手机上，转写成功才删除。断网时会在恢复后补上。
 
@@ -81,7 +81,7 @@ bin/cloudflared tunnel --url http://localhost:8787
 | `ACCESS_KEY` | 无 | 访问密钥，至少 16 个字符。没设时服务器只监听本机 |
 | `HOST` | `127.0.0.1` | 部署时设为 `0.0.0.0`，这时必须有 `ACCESS_KEY` |
 | `OPENAI_MODEL` | `gpt-5.6-sol` | 整理想法的模型 |
-| `OPENAI_TRANSCRIBE_MODEL` | `gpt-4o-transcribe` | 转写模型，接口没有时自动改用 `whisper-1` |
+| `OPENAI_TRANSCRIBE_MODEL` | `gpt-transcribe` | 转写模型，接口没有时依次改用 `gpt-4o-transcribe`、`whisper-1` |
 | `TRANSCRIBE_VOCAB` | 无 | 常用人名、术语，帮助识别 |
 
 ## 已知限制

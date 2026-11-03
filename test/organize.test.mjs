@@ -131,4 +131,6 @@ test("the transcription prompt names the script and the map's words", () => {
   assert.match(mindwalk.transcriptionPrompt("en", "", ""), /^Ideas dictated/);
   assert.equal(mindwalk.transcriptionPrompt(undefined, "", ""), "");
   assert.match(mindwalk.transcriptionPrompt("zh", "", "", "前面说到配速。"), /标点符号。 前面说到配速。$/);
+  assert.match(mindwalk.transcriptionPrompt("mix", "", ""), /中英文夹杂.*英文词保持英文/);
+  assert.deepEqual(mindwalk.transcriptionKeywords("MindWalk, ELM，跑步", "跑步、配速"), ["MindWalk", "ELM", "跑步", "配速"]);
 });

@@ -123,32 +123,54 @@ async function withFakeApi(models, run) {
   }
 }
 
-test("transcription uses gpt-4o-transcribe with the language and context prompt", async () => {
-  await withFakeApi(["gpt-4o-transcribe", "whisper-1"], async (client, uploads) => {
+const field = (body, name) => [...body.matchAll(new RegExp(`name="${name.replace(/[[\]]/g, "\\$&")}"\r\n\r\n([^\r]*)`, "g"))].map((m) => m[1]);
+
+test("transcription uses gpt-transcribe with keywords, languages and a context prompt", async () => {
+  await withFakeApi(["gpt-transcribe", "gpt-4o-transcribe", "whisper-1"], async (client, uploads) => {
     const backend = createOpenAIBackend(client);
-    const heard = await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm", { language: "zh", hint: "跑步" });
+    const heard = await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm", { language: "zh", hint: "跑步、配速", previous: "上一句。" });
     assert.deepEqual(heard, { text: "你好", duration: undefined });
     const [upload] = uploads;
     assert.match(upload.type, /^multipart\/form-data/);
     assert.match(upload.body, /filename="recording\.webm"/);
-    assert.equal(upload.model, "gpt-4o-transcribe");
-    assert.match(upload.body, /name="response_format"\r\n\r\njson\r/);
+    assert.equal(upload.model, "gpt-transcribe");
+    assert.deepEqual(field(upload.body, "response_format"), ["json"]);
+    assert.deepEqual(field(upload.body, "language"), ["zh"]);
+    assert.deepEqual(field(upload.body, "keywords[]"), ["跑步", "配速"]);
+    assert.deepEqual(field(upload.body, "languages[]"), []);
+    assert.match(field(upload.body, "prompt")[0], /^以下是普通话.*上一句。$/);
+    assert.doesNotMatch(field(upload.body, "prompt")[0], /跑步/);
     assert.doesNotMatch(upload.body, /chunking_strategy/);
-    assert.match(upload.body, /name="language"\r\n\r\nzh/);
-    assert.match(upload.body, /name="prompt"\r\n\r\n以下是普通话.*跑步/);
 
-    await backend.transcribe(Buffer.alloc(3 * 1024 * 1024), "m4a", "audio/mp4");
-    assert.match(uploads[1].body, /name="chunking_strategy"\r\n\r\nauto/);
+    await backend.transcribe(Buffer.alloc(3 * 1024 * 1024), "m4a", "audio/mp4", { language: "mix" });
+    assert.deepEqual(field(uploads[1].body, "languages[]"), ["zh", "en"]);
+    assert.deepEqual(field(uploads[1].body, "language"), []);
+    assert.deepEqual(field(uploads[1].body, "chunking_strategy"), ["auto"]);
   });
 });
 
-test("without gpt-4o-transcribe, transcription falls back to whisper-1 and stays there", async () => {
+test("a provider without gpt-transcribe gets gpt-4o-transcribe, then whisper-1", async () => {
+  await withFakeApi(["gpt-4o-transcribe", "whisper-1"], async (client, uploads) => {
+    const backend = createOpenAIBackend(client);
+    await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm", { language: "zh", hint: "跑步" });
+    await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm");
+    assert.deepEqual(uploads.map((u) => u.model), ["gpt-transcribe", "gpt-4o-transcribe", "gpt-4o-transcribe"]);
+    assert.deepEqual(field(uploads[1].body, "keywords[]"), []);
+    assert.match(field(uploads[1].body, "prompt")[0], /会提到：跑步/);
+  });
   await withFakeApi(["whisper-1"], async (client, uploads) => {
     const backend = createOpenAIBackend(client);
     assert.deepEqual(await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm"), { text: "你好", duration: 12.5 });
     await backend.transcribe(Buffer.from("abc"), "webm", "audio/webm");
-    assert.deepEqual(uploads.map((u) => u.model), ["gpt-4o-transcribe", "whisper-1", "whisper-1"]);
-    assert.match(uploads[1].body, /verbose_json/);
+    assert.deepEqual(uploads.map((u) => u.model), ["gpt-transcribe", "gpt-4o-transcribe", "whisper-1", "whisper-1"]);
+    assert.deepEqual(field(uploads[2].body, "response_format"), ["verbose_json"]);
+  });
+});
+
+test("a configured model is used without trying newer ones", async () => {
+  await withFakeApi(["gpt-transcribe", "whisper-1"], async (client, uploads) => {
+    await createOpenAIBackend(client, { transcribeModel: "whisper-1" }).transcribe(Buffer.from("abc"), "webm", "audio/webm");
+    assert.deepEqual(uploads.map((u) => u.model), ["whisper-1"]);
   });
 });
 
