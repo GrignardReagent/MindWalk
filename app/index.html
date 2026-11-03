@@ -4,21 +4,22 @@
 <style>
 /* Layout: a trail map fills the screen; the thumb-reach dock holds the one big control. Recording takes over the whole screen as a single tap target. */
 :root {
-  --bg: #e9f0ee; --panel: #f8fbfa; --ink: #10312f; --muted: #557370; --line: #c9d8d5; --contour: #dbe6e3;
-  --accent: #d9480f; --on-accent: #ffffff;
-  --b0: #0b7285; --b1: #5c7f0a; --b2: #b35c00; --b3: #7048b6; --b4: #c2255c; --b5: #2b6cb0;
+  /* Palette: space indigo #22223b, dusty grape #4a4e69, lilac ash #9a8c98, almond silk #c9ada7, parchment #f2e9e4 */
+  --bg: #f2e9e4; --panel: #f9f4f1; --ink: #22223b; --muted: #4a4e69; --line: #c9ada7; --contour: #e7dad3;
+  --accent: #4a4e69; --on-accent: #f2e9e4;
+  --b0: #4a4e69; --b1: #7d5d56; --b2: #56627f; --b3: #8a5a6b; --b4: #6e6370;
   --display: "Bricolage Grotesque", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
   --body: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0d1c1e; --panel: #142729; --ink: #e6f1ef; --muted: #93aeaa; --line: #2b4447; --contour: #16292c;
-  --accent: #ff7a33; --on-accent: #1c0b00;
-  --b0: #4cc3d9; --b1: #a7cf4a; --b2: #f2a03d; --b3: #b69cf0; --b4: #f2709c; --b5: #74b3f0; color-scheme: dark;
+  --bg: #22223b; --panel: #2b2b47; --ink: #f2e9e4; --muted: #ab9eaa; --line: #4a4e69; --contour: #2a2a45;
+  --accent: #c9ada7; --on-accent: #22223b;
+  --b0: #a3a7c2; --b1: #c9ada7; --b2: #8fa3c4; --b3: #d8a3b4; --b4: #b3a1b0; color-scheme: dark;
 } }
 :root[data-theme="dark"] {
-  --bg: #0d1c1e; --panel: #142729; --ink: #e6f1ef; --muted: #93aeaa; --line: #2b4447; --contour: #16292c;
-  --accent: #ff7a33; --on-accent: #1c0b00;
-  --b0: #4cc3d9; --b1: #a7cf4a; --b2: #f2a03d; --b3: #b69cf0; --b4: #f2709c; --b5: #74b3f0; color-scheme: dark;
+  --bg: #22223b; --panel: #2b2b47; --ink: #f2e9e4; --muted: #ab9eaa; --line: #4a4e69; --contour: #2a2a45;
+  --accent: #c9ada7; --on-accent: #22223b;
+  --b0: #a3a7c2; --b1: #c9ada7; --b2: #8fa3c4; --b3: #d8a3b4; --b4: #b3a1b0; color-scheme: dark;
 }
 html, body { height: 100%; }
 body {
@@ -88,7 +89,10 @@ footer {
   width: 100%; min-height: 84px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent);
   font: 800 25px/1 var(--display); -webkit-tap-highlight-color: transparent;
 }
-.options { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); }
+.options { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.options select, .options > button { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--ink); font-size: 14px; }
+#tidy { margin-left: auto; }
+#undo { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: none; flex: none; }
 .options label { display: flex; align-items: center; gap: 6px; min-height: 40px; }
 .options input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
 .upload { padding-inline: 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); cursor: pointer; }
@@ -96,13 +100,20 @@ footer {
 .upload:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 #focus {
-  position: fixed; inset: 0; z-index: 20; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: 100%; gap: 16px; border: 0; text-align: left;
+  position: fixed; inset: 0; z-index: 20; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; width: 100%; gap: 14px; border: 0; text-align: left;
   padding-top: calc(24px + env(safe-area-inset-top, 0px)); padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
   background: var(--accent); color: var(--on-accent); -webkit-tap-highlight-color: transparent;
 }
 #clock { font: 800 60px/1 var(--display); font-variant-numeric: tabular-nums; }
-#live { align-self: end; font-size: 24px; line-height: 1.4; font-weight: 600; }
+#liveBox {
+  min-height: 0; overflow: hidden; padding: 14px 16px;
+  border: 2px solid color-mix(in srgb, var(--on-accent) 45%, transparent); border-radius: 12px;
+  background: color-mix(in srgb, var(--on-accent) 12%, transparent);
+}
+#liveText { display: block; font-size: 22px; line-height: 1.45; font-weight: 600; white-space: pre-wrap; overflow-wrap: anywhere; }
+#liveText:empty::before { content: attr(data-placeholder); opacity: 0.75; font-weight: 500; }
+#focusNote { font-size: 15px; line-height: 1.4; opacity: 0.9; }
 #focusHint { font: 800 22px/1.2 var(--display); }
 
 #sheet { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; background: color-mix(in srgb, var(--ink) 45%, transparent); }
@@ -116,6 +127,13 @@ footer {
 .sheet-actions { display: flex; gap: 8px; }
 .sheet-actions button { flex: 1; min-height: 48px; border: 1px solid var(--line); border-radius: 8px; background: none; }
 #sheetDelete { color: var(--accent); border-color: currentColor; }
+#lock { position: fixed; inset: 0; z-index: 40; display: grid; place-content: center; padding: 24px; background: var(--bg); }
+#lock > div { display: grid; gap: 12px; width: min(340px, 100%); }
+#lock strong { font: 800 24px/1.25 var(--display); }
+#lock span { color: var(--muted); }
+#lockKey { min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; color: inherit; }
+#lock button { min-height: 48px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+#lock #lockError { min-height: 22px; color: var(--accent); font-weight: 600; }
 @media (min-width: 720px) { #mic { min-height: 64px; } .node { max-width: 170px; } }
 @media (prefers-reduced-motion: no-preference) {
   #focus[data-on] { animation: breathe 2.8s ease-in-out infinite; }
@@ -142,20 +160,27 @@ footer {
 </main>
 
 <footer>
-  <div id="status" role="status"><span id="statusText"></span><button id="retry" type="button" hidden data-i18n="retry"></button></div>
+  <div id="status" role="status"><span id="statusText"></span><button id="retry" type="button" hidden data-i18n="retry"></button><button id="undo" type="button" hidden data-i18n="undo"></button></div>
   <div class="compose">
     <textarea id="note"></textarea>
     <button id="send" type="button" data-i18n="send"></button>
   </div>
   <button id="mic" type="button" hidden data-i18n="mic"></button>
   <div class="options">
+    <select id="speechLang">
+      <option value="zh" data-i18n="speechZh"></option>
+      <option value="en" data-i18n="speechEn"></option>
+      <option value="mix" data-i18n="speechMix"></option>
+    </select>
     <label id="uploadLabel" class="upload"><span data-i18n="upload"></span><input id="upload" type="file" accept="audio/*,.m4a,.mp3,.wav,.webm,.ogg"></label>
+    <button id="tidy" type="button" hidden data-i18n="tidy"></button>
   </div>
 </footer>
 
 <button id="focus" type="button" hidden>
   <span id="clock">00:00</span>
-  <span id="live"></span>
+  <span id="liveBox"><span id="liveText"></span></span>
+  <span id="focusNote"></span>
   <span id="focusHint" data-i18n="focusHint"></span>
 </button>
 
@@ -170,14 +195,26 @@ footer {
   </div>
 </div>
 
+<form id="lock" hidden>
+  <div>
+    <strong data-i18n="lockTitle"></strong>
+    <span data-i18n="lockBody"></span>
+    <input id="lockKey" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false">
+    <button type="submit" data-i18n="unlock"></button>
+    <span id="lockError" role="alert"></span>
+  </div>
+</form>
+
 <script src="organize.js"></script>
 <script>
 (() => {
-  const { ROOT, DEFAULT_TITLE, emptyMap, buildPrompt, applyResult, removeSubtree, toMarkdown } = window.MindWalk;
+  const { ROOT, DEFAULT_TITLE, emptyMap, buildPrompt, buildTidyPrompt, applyResult, applyTidy, vocabularyHint, removeSubtree, toMarkdown } = window.MindWalk;
   const $ = (id) => document.getElementById(id);
   const KEY = "mindwalk.map.v1";
   const LANG = "mindwalk.lang";
-  const BRANCHES = 6;
+  const ACCESS = "mindwalk.key";
+  const SPEECH = "mindwalk.speech";
+  const BRANCHES = 5;
 
   const store = {
     get(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } },
@@ -193,7 +230,8 @@ footer {
       placeholderTyped: "也可以在这里打字", placeholderKeyboard: "点手机键盘上的麦克风说话，说完点整理",
       ideas: (n) => `${n} 个想法`, pendingCount: (n) => `${n} 段待整理`, example: "示例，开始说话后会被替换",
       recordingIOS: "iPhone 不支持网页锁屏录音，请保持屏幕亮着。要锁屏，请用语音备忘录录完再上传。",
-      recordingLock: "可以锁屏，把手机放进口袋。结束时会告诉你有没有漏录。",
+      recordingLock: "可以锁屏放进口袋。结束时会告诉你有没有漏录。",
+      livePlaceholder: "开始说吧。每句话说完稍停一下，字就会出现在这里。", finishing: "正在转写最后一句…点一下可直接关闭",
       cloudSlow: "云端暂时连不上，新内容先存在这台手机上", cloudLost: "云端同步已断开，新内容先存在这台手机上", cloudFailed: "没能同步到云端，内容还在这台手机上",
       organizing: (n) => `正在整理 ${n} 段话…`, added: (n) => `已加入 ${n} 个想法`,
       gap: (g) => `录音时长 ${minutes(g.duration, " 分", " 秒")}，实际过了 ${minutes(g.wall, " 分", " 秒")}，中间有一段没录到。`,
@@ -207,6 +245,12 @@ footer {
       fail_session_expired: "登录已过期。重新登录后点重试。", fail_rate_limited: "请求太频繁，稍后再点重试。",
       fail_no_api_key: "服务器还没有配置 OPENAI_API_KEY。", fail_quota: "API 额度不足。补足后点重试。",
       fail_bad_audio: "这个音频格式不能转写。支持 m4a、mp3、wav、webm、ogg。", fail_too_large: "录音超过 25 MB，无法转写。",
+      fail_locked: "需要访问密钥。",
+      speechZh: "识别：中文", speechEn: "识别：English", speechMix: "识别：中英混合", speechLabel: "说话用的语言",
+      tidy: "精简导图", tidying: "正在精简导图…", tidied: (a, b) => `已精简：${a} → ${b} 个节点`, tidyFailed: "没能精简，导图没有改动。",
+      undo: "撤销", undone: "已撤销",
+      lockTitle: "输入访问密钥", lockBody: "密钥只存在这台手机上，只需输入一次。", lockPlaceholder: "访问密钥", unlock: "进入",
+      lockWrong: "密钥不对，再试一次。", lockOffline: "连不上服务器，检查网络后再试。",
     },
     en: {
       switchTo: "中文", switchLabel: "切换到中文", defaultTitle: "My ideas",
@@ -217,6 +261,7 @@ footer {
       ideas: (n) => `${n} ${n === 1 ? "idea" : "ideas"}`, pendingCount: (n) => `${n} waiting`, example: "Example, replaced once you start talking",
       recordingIOS: "iPhone web pages can't record while locked, so keep the screen on. To lock it, record in Voice Memos and upload afterwards.",
       recordingLock: "You can lock your phone and pocket it. You'll be told if anything was missed.",
+      livePlaceholder: "Start talking. Pause briefly after each sentence and the words appear here.", finishing: "Transcribing the last sentence… Tap to close now",
       cloudSlow: "Can't reach the cloud right now. New notes stay on this phone.", cloudLost: "Cloud sync disconnected. New notes stay on this phone.", cloudFailed: "Couldn't sync to the cloud. Your notes are still on this phone.",
       organizing: (n) => `Organizing ${n} ${n === 1 ? "note" : "notes"}…`, added: (n) => `Added ${n} ${n === 1 ? "idea" : "ideas"}`,
       gap: (g) => `The recording is ${minutes(g.duration, "m", "s")} long but ${minutes(g.wall, "m", "s")} passed, so part of it was missed.`,
@@ -230,6 +275,12 @@ footer {
       fail_session_expired: "Your sign-in expired. Sign in again, then tap Retry.", fail_rate_limited: "Too many requests. Wait a moment, then tap Retry.",
       fail_no_api_key: "The server has no OPENAI_API_KEY set.", fail_quota: "The API quota has run out. Top it up, then tap Retry.",
       fail_bad_audio: "This audio format can't be transcribed. Use m4a, mp3, wav, webm or ogg.", fail_too_large: "The recording is over 25 MB and can't be transcribed.",
+      fail_locked: "An access key is needed.",
+      speechZh: "Speech: Chinese", speechEn: "Speech: English", speechMix: "Speech: Chinese + English", speechLabel: "Language you speak",
+      tidy: "Tidy map", tidying: "Tidying the map…", tidied: (a, b) => `Tidied: ${a} → ${b} ideas`, tidyFailed: "Couldn't tidy. The map is unchanged.",
+      undo: "Undo", undone: "Undone",
+      lockTitle: "Enter access key", lockBody: "The key is kept on this phone, so you only enter it once.", lockPlaceholder: "Access key", unlock: "Unlock",
+      lockWrong: "That key is wrong. Try again.", lockOffline: "Can't reach the server. Check your connection and try again.",
     },
   };
 
@@ -239,6 +290,15 @@ footer {
   };
 
   let lang = store.get(LANG) in STRINGS ? store.get(LANG) : /^zh/i.test(navigator.language) ? "zh" : "en";
+  const savedSpeech = store.get(SPEECH) === "auto" ? "mix" : store.get(SPEECH);
+  let speechLang = ["zh", "en", "mix"].includes(savedSpeech) ? savedSpeech : lang;
+  let accessKey = store.get(ACCESS) || "";
+  // A link like https://…/#key=… unlocks the page once; the fragment never reaches the server.
+  const keyInLink = location.hash.match(/[#&]key=([^&]+)/);
+  if (keyInLink) {
+    try { accessKey = decodeURIComponent(keyInLink[1]); store.set(ACCESS, accessKey); } catch {}
+    history.replaceState(null, "", location.pathname + location.search);
+  }
   let status = null;
 
   const t = (key, ...args) => {
@@ -254,6 +314,7 @@ footer {
   let bounds = null;
   let busy = false;
   let gapNotice = null;
+  let undoMap = null;
 
   /* ---------- Claude and storage backends ---------- */
 
@@ -301,19 +362,30 @@ footer {
     pushMap();
   }
 
-  async function askClaude(text) {
+  // Every server call carries the access key. A 401 brings up the key screen.
+  async function api(path, options = {}) {
+    const res = await fetch(path, { ...options, headers: { ...options.headers, "x-access-key": encodeURIComponent(accessKey) } });
+    if (res.status === 401) {
+      showLock();
+      throw { code: "locked" };
+    }
+    if (!res.ok) throw { code: (await res.json().catch(() => ({}))).code || "upstream_error" };
+    return res;
+  }
+
+  async function ask(path, body, prompt) {
     await ready;
     if (window.claude) {
       if (!sample) throw { code: "signed_out" };
-      return sample.json(buildPrompt(map, text), { cache: false, effort: "low" });
+      return sample.json(prompt, { cache: false, effort: "low" });
     }
-    const res = await fetch("api/organize", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ map, text }),
-    });
-    if (!res.ok) throw { code: (await res.json().catch(() => ({}))).code || "upstream_error" };
+    const res = await api(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     return res.json();
+  }
+
+  function dropUndo() {
+    undoMap = null;
+    $("undo").hidden = true;
   }
 
   /* ---------- Queue: notes stay in map.pending until Claude has placed them ---------- */
@@ -327,8 +399,13 @@ footer {
     flush();
   }
 
+  // While recording, notes are organized in batches, so the model sees whole thoughts.
+  const ripe = () => !recording
+    || map.pending.reduce((sum, n) => sum + n.text.length, 0) >= ORGANIZE_EVERY_CHARS
+    || Date.now() - map.pending[0].at >= ORGANIZE_EVERY_MS;
+
   async function flush() {
-    if (busy || !map.pending.length) return;
+    if (busy || !map.pending.length || !ripe()) return;
     busy = true;
     $("retry").hidden = true;
     setStatus("organizing", false, map.pending.length);
@@ -336,11 +413,12 @@ footer {
     const text = batch.map((n) => n.text).join("\n");
     try {
       if (map.example) map = { ...emptyMap(), pending: map.pending, updatedAt: map.updatedAt };
-      const result = await askClaude(text);
+      const result = await ask("api/organize", { map, text }, buildPrompt(map, text));
       const before = map.nodes.length;
       const sent = new Set(batch.map((n) => n.at));
       map = applyResult(map, result, text, Date.now());
       map.pending = map.pending.filter((n) => !sent.has(n.at));
+      dropUndo();
       save();
       render();
       const added = map.nodes.length - before;
@@ -352,6 +430,31 @@ footer {
       $("retry").hidden = false;
       busy = false;
       return;
+    }
+    busy = false;
+    flush();
+  }
+
+  // Asks the model to merge, regroup and shorten the whole map. One tap undoes it.
+  async function tidyMap() {
+    if (busy || map.nodes.length < 2) return;
+    busy = true;
+    $("retry").hidden = true;
+    dropUndo();
+    setStatus("tidying");
+    try {
+      const before = map;
+      const result = await ask("api/tidy", { map }, buildTidyPrompt(map));
+      const tidied = applyTidy(map, result, Date.now());
+      if (tidied === map) throw {};
+      map = tidied;
+      undoMap = before;
+      save();
+      render();
+      setStatus("tidied", false, before.nodes.length, map.nodes.length);
+      $("undo").hidden = false;
+    } catch (e) {
+      setStatus(failureKey(e, "tidyFailed"), true);
     }
     busy = false;
     flush();
@@ -412,43 +515,138 @@ footer {
     };
   })();
 
+  // Speech is cut into short clips at natural pauses, so each sentence is
+  // transcribed and shown in the box a moment after it is said. Clips overlap
+  // briefly so no word falls between two, and each clip stays saved on the
+  // phone until its words are safely queued.
+  const MIN_CLIP_SECONDS = 4;
+  const MAX_CLIP_SECONDS = 25;
+  const PAUSE_SECONDS = 0.6;
+  const CLIP_OVERLAP_MS = 500;
+  const ORGANIZE_EVERY_MS = 2 * 60 * 1000;
+  const ORGANIZE_EVERY_CHARS = 400;
   let recording = null;
   let wakeLock = null;
   let ticker = 0;
-  let uploading = false;
+  let uploadRun = null;
+  let uploadAgain = false;
+  let heard = [];
+  const openClips = new Set();
   const wallSeconds = new Map();
 
   const extensionFor = (type) => (/mp4|m4a|aac/.test(type) ? "m4a" : /ogg/.test(type) ? "ogg" : /mpeg|mp3/.test(type) ? "mp3" : /wav/.test(type) ? "wav" : "webm");
+
+  // gpt-4o-transcribe doesn't report the audio length, so measure it here to
+  // compare against the time that passed and spot audio the phone missed.
+  async function audioSeconds(blob) {
+    try {
+      const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const decoded = await new Offline(1, 1, 16000).decodeAudioData(await blob.arrayBuffer());
+      return decoded.duration;
+    } catch {
+      return 0;
+    }
+  }
 
   function pickFormat() {
     return ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
   }
 
+  function startSegment(stream) {
+    const type = pickFormat();
+    const recorder = new MediaRecorder(stream, { ...(type && { mimeType: type }), audioBitsPerSecond: 32000 });
+    const segment = { recorder, clip: `clip-${Date.now()}`, type: recorder.mimeType || type, startedAt: Date.now(), voiced: 0, saves: [] };
+    segment.stopped = new Promise((resolve) => { recorder.onstop = resolve; });
+    recorder.ondataavailable = (event) => {
+      if (event.data.size) segment.saves.push(clips.add({ clip: segment.clip, type: segment.type, data: event.data }));
+    };
+    recorder.onerror = () => { if (recording && recording.segment === segment) finishRecording(); };
+    openClips.add(segment.clip);
+    recorder.start(5000);
+    return segment;
+  }
+
+  async function closeSegment(segment) {
+    wallSeconds.set(segment.clip, (Date.now() - segment.startedAt) / 1000);
+    if (segment.recorder.state !== "inactive") {
+      segment.recorder.stop();
+      await segment.stopped;
+    }
+    await Promise.allSettled(segment.saves);
+    openClips.delete(segment.clip);
+  }
+
+  function rotateSegment() {
+    const old = recording.segment;
+    try {
+      recording.segment = startSegment(recording.stream);
+    } catch {
+      return; // Keep the current clip going rather than risk a gap.
+    }
+    const closed = new Promise((resolve) => setTimeout(resolve, CLIP_OVERLAP_MS)).then(() => closeSegment(old));
+    recording.closing = Promise.all([recording.closing, closed]);
+    closed.then(uploadClips);
+  }
+
+  // Watches the microphone level to find pauses. Audio callbacks keep running
+  // when timers are throttled; the clock in tick() is the fallback.
+  function listenForPauses(context, stream) {
+    if (!context) return;
+    try {
+      const source = context.createMediaStreamSource(stream);
+      const meter = context.createScriptProcessor(2048, 1, 1);
+      const mute = context.createGain();
+      mute.gain.value = 0;
+      let floor = 0;
+      meter.onaudioprocess = (event) => {
+        if (!recording) return;
+        const data = event.inputBuffer.getChannelData(0);
+        let sum = 0;
+        for (let i = 0; i < data.length; i += 1) sum += data[i] * data[i];
+        const level = Math.sqrt(sum / data.length);
+        const seconds = data.length / context.sampleRate;
+        floor = !floor || level < floor ? level : floor + (level - floor) * 0.002;
+        const segment = recording.segment;
+        if (level > Math.max(floor * 3, 0.006)) {
+          segment.voiced += seconds;
+          recording.quiet = 0;
+        } else {
+          recording.quiet += seconds;
+        }
+        const age = (Date.now() - segment.startedAt) / 1000;
+        if (age >= MIN_CLIP_SECONDS && segment.voiced >= 0.4 && recording.quiet >= PAUSE_SECONDS) rotateSegment();
+      };
+      source.connect(meter);
+      meter.connect(mute);
+      mute.connect(context.destination);
+      context.resume().catch(() => {});
+    } catch {}
+  }
+
   async function startRecording() {
     if (recording) return;
+    // Made during the tap, so iOS lets it run.
+    const Context = window.AudioContext || window.webkitAudioContext;
+    let context = null;
+    try { context = Context ? new Context() : null; } catch {}
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
       });
     } catch {
+      if (context) context.close().catch(() => {});
       setStatus("noMic", true);
       return;
     }
-    const type = pickFormat();
-    const recorder = new MediaRecorder(stream, { ...(type && { mimeType: type }), audioBitsPerSecond: 32000 });
-    const session = { recorder, stream, clip: `clip-${Date.now()}`, type: recorder.mimeType || type, startedAt: Date.now(), saves: [] };
-    session.stopped = new Promise((resolve) => { recorder.onstop = resolve; });
-    recorder.ondataavailable = (event) => {
-      if (event.data.size) session.saves.push(clips.add({ clip: session.clip, type: session.type, data: event.data }));
-    };
-    recorder.onerror = () => finishRecording();
-    const track = stream.getAudioTracks()[0];
-    track.addEventListener("ended", () => finishRecording());
-    recording = session;
-    recorder.start(5000);
+    recording = { stream, context, startedAt: Date.now(), quiet: 0, closing: null, segment: startSegment(stream) };
+    listenForPauses(context, stream);
+    stream.getAudioTracks()[0].addEventListener("ended", () => finishRecording());
 
-    $("live").textContent = t(isIOS ? "recordingIOS" : "recordingLock");
+    heard = [];
+    renderLive();
+    $("focusNote").textContent = t(isIOS ? "recordingIOS" : "recordingLock");
+    $("focusHint").textContent = t("focusHint");
     $("focus").hidden = false;
     $("focus").dataset.on = "1";
     tick();
@@ -460,58 +658,91 @@ footer {
     if (!recording) return;
     const seconds = Math.floor((Date.now() - recording.startedAt) / 1000);
     $("clock").textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
-    if (seconds >= MAX_RECORD_SECONDS || recording.recorder.state === "inactive") finishRecording();
+    if (seconds >= MAX_RECORD_SECONDS || recording.segment.recorder.state === "inactive") finishRecording();
+    else if (Date.now() - recording.segment.startedAt >= MAX_CLIP_SECONDS * 1000) rotateSegment();
+    else if (map.pending.length) flush();
   }
 
+  // The box stays up until the last sentence is in it, unless tapped again.
   async function finishRecording() {
     const session = recording;
     if (!session) return;
     recording = null;
     clearInterval(ticker);
-    $("focus").hidden = true;
     delete $("focus").dataset.on;
+    $("focusHint").textContent = t("finishing");
     if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
-    wallSeconds.set(session.clip, (Date.now() - session.startedAt) / 1000);
-    if (session.recorder.state !== "inactive") {
-      session.recorder.stop();
-      await session.stopped;
+    await Promise.all([closeSegment(session.segment), session.closing]);
+    session.stream.getTracks().forEach((track) => track.stop());
+    if (session.context) session.context.close().catch(() => {});
+    await uploadClips();
+    closeFocus();
+    flush();
+  }
+
+  function closeFocus() {
+    if (!recording) $("focus").hidden = true;
+  }
+
+  function renderLive() {
+    const cjkEnd = /[\u3000-\u303f\u3400-\u9fff\uff00-\uffef]$/;
+    const text = heard.reduce((all, part) => (all && !cjkEnd.test(all) ? `${all} ${part}` : all + part), "");
+    $("liveText").textContent = uploadRun ? `${text} …` : text;
+    $("liveBox").scrollTop = $("liveBox").scrollHeight;
+  }
+
+  function uploadClips() {
+    if (uploadRun) {
+      uploadAgain = true;
+      return uploadRun;
     }
-    session.stream.getTracks().forEach((t) => t.stop());
-    await Promise.allSettled(session.saves);
-    uploadClips();
+    uploadRun = (async () => {
+      $("retry").hidden = true;
+      let ok;
+      do {
+        uploadAgain = false;
+        ok = await uploadOnce();
+      } while (ok && uploadAgain);
+      uploadRun = null;
+      renderLive();
+    })();
+    return uploadRun;
   }
 
   // A clip leaves the device only after its words are safely in map.pending.
-  async function uploadClips() {
-    if (uploading) return;
-    uploading = true;
-    $("retry").hidden = true;
+  async function uploadOnce() {
     let gap = null;
     try {
       for (const clip of await clips.all()) {
-        if (recording && clip.clip === recording.clip) continue;
+        if (openClips.has(clip.clip)) break; // Later clips wait, so words stay in order.
         setStatus("transcribing", false, Math.max(1, Math.round(clip.blob.size / 1048576)));
-        const res = await fetch("api/transcribe", {
+        renderLive();
+        const query = new URLSearchParams({ lang: speechLang, hint: vocabularyHint(map), prev: heard.join(" ").slice(-80) });
+        const res = await api(`api/transcribe?${query}`, {
           method: "POST",
           headers: { "content-type": clip.type || "audio/webm", "x-file-extension": extensionFor(clip.type) },
           body: clip.blob,
         });
-        if (!res.ok) throw { code: (await res.json().catch(() => ({}))).code || "upstream_error" };
-        const { text, duration } = await res.json();
+        const { text, duration: reported } = await res.json();
         const wall = wallSeconds.get(clip.clip);
-        if (duration && wall && wall - duration > 20) {
-          gap = { duration, wall };
+        const duration = reported || (wall ? await audioSeconds(clip.blob) : 0);
+        if (duration && wall && wall - duration > 20) gap = { duration, wall };
+        if (text && text.trim()) {
+          heard.push(text.trim());
+          renderLive();
+          enqueue(text);
+        } else if (clip.clip.startsWith("file-") || (!recording && !heard.length)) {
+          setStatus("noSpeech");
         }
-        if (text && text.trim()) enqueue(text);
-        else setStatus("noSpeech");
         await clips.remove(clip.clip);
       }
       if (gap) { gapNotice = gap; setStatus("gap", true, gap); }
+      return true;
     } catch (e) {
       setStatus(failureKey(e, "clipSaved"), true);
       $("retry").hidden = false;
+      return false;
     }
-    uploading = false;
   }
 
   async function addAudioFile(file) {
@@ -543,6 +774,10 @@ footer {
     $("lang").textContent = t("switchTo");
     $("lang").setAttribute("aria-label", t("switchLabel"));
     $("note").setAttribute("aria-label", t("noteLabel"));
+    $("speechLang").setAttribute("aria-label", t("speechLabel"));
+    $("speechLang").value = speechLang;
+    $("lockKey").placeholder = t("lockPlaceholder");
+    $("liveText").dataset.placeholder = t("livePlaceholder");
     renderControls();
     showStatus();
     render();
@@ -551,6 +786,7 @@ footer {
   function renderControls() {
     $("mic").hidden = !recordingUsable;
     $("uploadLabel").hidden = !serverMode;
+    $("speechLang").hidden = !serverMode;
     $("note").placeholder = t(recordingUsable ? "placeholderTyped" : "placeholderKeyboard");
   }
 
@@ -677,6 +913,7 @@ footer {
     if (map.example) parts.push(t("example"));
     $("stats").textContent = parts.join(" · ");
     $("empty").hidden = map.nodes.length > 0 || !$("outlineView").hidden;
+    $("tidy").hidden = map.nodes.length < 2;
     renderMap();
     renderOutline();
   }
@@ -687,6 +924,12 @@ footer {
     $("tabMap").setAttribute("aria-pressed", String(!outline));
     $("tabOutline").setAttribute("aria-pressed", String(outline));
     render();
+  }
+
+  function showLock() {
+    if (recording) return; // Asked again once the recording ends.
+    $("lock").hidden = false;
+    $("lockKey").focus();
   }
 
   function openSheet(n) {
@@ -762,7 +1005,7 @@ footer {
   /* ---------- Controls ---------- */
 
   $("mic").addEventListener("click", startRecording);
-  $("focus").addEventListener("click", finishRecording);
+  $("focus").addEventListener("click", () => (recording ? finishRecording() : closeFocus()));
   $("upload").addEventListener("change", (e) => { addAudioFile(e.target.files[0]); e.target.value = ""; });
   $("send").addEventListener("click", () => {
     const text = $("note").value;
@@ -785,9 +1028,39 @@ footer {
       return;
     }
     map = removeSubtree(map, selected.id, Date.now());
+    dropUndo();
     $("sheet").hidden = true;
     save();
     render();
+  });
+
+  $("tidy").addEventListener("click", tidyMap);
+  $("undo").addEventListener("click", () => {
+    if (!undoMap) return;
+    map = { ...undoMap, pending: map.pending, updatedAt: Date.now() };
+    dropUndo();
+    save();
+    render();
+    setStatus("undone");
+  });
+  $("speechLang").addEventListener("change", (e) => {
+    speechLang = e.target.value;
+    store.set(SPEECH, speechLang);
+  });
+  $("lock").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const key = $("lockKey").value.trim();
+    if (!key) return;
+    const res = await fetch("api/auth", { headers: { "x-access-key": encodeURIComponent(key) } }).catch(() => null);
+    if (!res || (!res.ok && res.status !== 401)) { $("lockError").textContent = t("lockOffline"); return; }
+    if (res.status === 401) { $("lockError").textContent = t("lockWrong"); return; }
+    accessKey = key;
+    store.set(ACCESS, key);
+    $("lock").hidden = true;
+    $("lockKey").value = "";
+    $("lockError").textContent = "";
+    await uploadClips();
+    flush();
   });
 
   $("lang").addEventListener("click", () => {
@@ -802,6 +1075,7 @@ footer {
     setStatus("waiting", false, map.pending.length);
     $("retry").hidden = false;
   }
-  if (serverMode) uploadClips();
+  // Check the key up front, so the key screen shows before a walk, not after it.
+  if (serverMode) api("api/auth").then(uploadClips, (e) => { if (e.code !== "locked") uploadClips(); });
 })();
 </script>
