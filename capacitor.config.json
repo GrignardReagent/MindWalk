@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.grignardreagent.mindwalk",
+  "appName": "MindWalk",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f2e9e4"
+  }
+}

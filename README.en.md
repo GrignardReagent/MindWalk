@@ -4,7 +4,34 @@
 
 Talk while you walk. Your words appear live in a box on screen and are then organized into a mind map. By default the models are called through the University of Edinburgh's ELM, and any OpenAI-compatible API also works.
 
-## Deploy to the web (recommended)
+## Android app
+
+The app does what the web page does, but opens faster and records offline (clips are transcribed once you're back online). While it records with the screen locked, the notification bar shows it's recording, so Android doesn't cut off the microphone.
+
+The app connects to the server you deploy, so do "Deploy to the web" below first. Then:
+
+1. On your phone, download [the latest MindWalk.apk](https://github.com/GrignardReagent/MindWalk/releases/latest/download/MindWalk.apk). If the repository is private, sign in to GitHub on the phone first.
+2. Tap the downloaded file to install it. The first time, Android asks you to allow installing unknown apps from your browser.
+3. Open MindWalk and enter your server address (like `mindwalk.onrender.com`) and access key. You can change them later under "Connection" on the Outline tab.
+4. Allow the microphone and notifications the first time you record.
+
+Xiaomi, Huawei, OPPO, vivo and similar phones save battery aggressively. Try a few minutes with the screen locked first. If audio was missed, set MindWalk's battery setting to "Unrestricted" or allow it to run in the background.
+
+Updates: every merge to `main` makes GitHub Actions build a new APK and publish it under Releases. Once the signing key below is set, install the new one over the old one and your data stays.
+
+To build it yourself: `npm run build:app`, then open `android/` in Android Studio or run `cd android && ./gradlew assembleRelease`.
+
+**Signing key (worth setting once)**: without one, every build has a different signature, so you must uninstall the old app before installing a new one, which deletes the map on the phone (copy a backup from the Outline tab first). To set one, run the commands below on your computer, then add two secrets under the repository's **Settings → Secrets and variables → Actions**: `ANDROID_KEYSTORE_BASE64` (the long string the second command prints) and `ANDROID_KEYSTORE_PASSWORD` (the password you chose). Keep the keystore file safe and out of the repository.
+
+```bash
+keytool -genkeypair -keystore mindwalk.keystore -alias mindwalk -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MindWalk"
+```
+
+```bash
+base64 -w0 mindwalk.keystore
+```
+
+## Deploy to the web
 
 Deploy free on [Render](https://render.com). It provides HTTPS, so your phone just opens a URL and no computer has to stay on.
 
@@ -65,6 +92,7 @@ Once the map has 2 or more ideas, a "Tidy map" button appears. It merges duplica
 
 | Phone | How to record |
 |---|---|
+| Android app | Tap "Start recording", then lock the screen. The notification bar shows it's recording |
 | Android (Chrome) | Tap "Start recording", then lock the screen. Try a few minutes first: when you stop, the page tells you if anything was missed |
 | iPhone | iOS keeps the screen on while a web page records. To lock it, record in Voice Memos, save to Files, then tap "Upload audio" |
 

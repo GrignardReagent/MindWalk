@@ -4,7 +4,34 @@
 
 边走边说，字实时出现在屏幕上的框里，再自动整理成思维导图。默认通过爱丁堡大学的 ELM 调用模型，也兼容其他 OpenAI 格式的接口。
 
-## 部署到网页（推荐）
+## 安卓 App
+
+App 和网页功能一样，但打开更快，没网也能录（恢复网络后自动转写）。锁屏录音时通知栏会显示“正在录音”，系统不会中途掐断麦克风。
+
+App 需要连接你部署的服务器，所以先完成下面的“部署到网页”。然后：
+
+1. 在手机浏览器打开 [最新版 MindWalk.apk](https://github.com/GrignardReagent/MindWalk/releases/latest/download/MindWalk.apk) 下载。仓库是私有的话，要先在手机上登录 GitHub。
+2. 点下载好的文件安装。第一次会提示“允许安装未知应用”，给浏览器打开这个权限。
+3. 打开 MindWalk，填服务器网址（例如 `mindwalk.onrender.com`）和访问密钥。以后在“大纲”页的“连接设置”里可以改。
+4. 第一次录音时允许麦克风和通知。
+
+小米、华为、OPPO、vivo 等手机省电比较激进：第一次锁屏录几分钟试试。如果漏录，在系统设置里把 MindWalk 的电池策略改成“无限制”或“允许后台运行”。
+
+更新：每次合并到 `main`，GitHub Actions 会自动打包新版发布到 Releases。设置了下面的签名密钥后，下载新版直接覆盖安装，数据不会丢。
+
+自己打包：`npm run build:app`，然后用 Android Studio 打开 `android/`，或者运行 `cd android && ./gradlew assembleRelease`。
+
+**签名密钥（建议设置一次）**：不设置的话，每次打包的签名都不一样，装新版前要先卸载旧版，手机上的导图会丢（先在“大纲”页复制备份）。设置方法：在自己电脑上运行下面的命令生成密钥，然后在 GitHub 仓库的 **Settings → Secrets and variables → Actions** 里添加两个 secret：`ANDROID_KEYSTORE_BASE64`（命令输出的那一长串）和 `ANDROID_KEYSTORE_PASSWORD`（你设的密码）。密钥文件自己保管好，不要放进仓库。
+
+```bash
+keytool -genkeypair -keystore mindwalk.keystore -alias mindwalk -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=MindWalk"
+```
+
+```bash
+base64 -w0 mindwalk.keystore
+```
+
+## 部署到网页
 
 用 [Render](https://render.com) 免费部署，自带 HTTPS，手机直接打开网址就能用，不用开电脑。
 
@@ -65,6 +92,7 @@ bin/cloudflared tunnel --url http://localhost:8787
 
 | 手机 | 怎么录 |
 |---|---|
+| Android App | 点“开始录音”，然后锁屏。通知栏会显示正在录音 |
 | Android（Chrome） | 点“开始录音”，然后锁屏。第一次请先录几分钟试试，结束时页面会告诉你有没有漏录 |
 | iPhone | 网页录音时屏幕必须亮着，这是 iOS 的限制。要锁屏，就用“语音备忘录”录完，存到“文件”，再点“上传录音” |
 

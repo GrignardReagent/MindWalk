@@ -82,6 +82,25 @@ test("with an access key, the API needs it but the page does not", async () => {
   }, { accessKey: key });
 });
 
+test("the app's page, served from another origin, can call the API", async () => {
+  await withServer(async () => ({}), async (base) => {
+    const preflight = await fetch(`${base}/api/transcribe`, {
+      method: "OPTIONS",
+      headers: { origin: "https://localhost", "access-control-request-method": "POST", "access-control-request-headers": "x-access-key, content-type" },
+    });
+    assert.equal(preflight.status, 204);
+    assert.equal(preflight.headers.get("access-control-allow-origin"), "*");
+    assert.match(preflight.headers.get("access-control-allow-headers"), /x-access-key/);
+    const denied = await fetch(`${base}/api/auth`, { headers: { origin: "https://localhost" } });
+    assert.equal(denied.status, 401);
+    assert.equal(denied.headers.get("access-control-allow-origin"), "*");
+    const ok = await fetch(`${base}/api/auth`, { headers: { origin: "https://localhost", "x-access-key": "0123456789abcdef" } });
+    assert.equal(ok.status, 204);
+    assert.equal(ok.headers.get("access-control-allow-origin"), "*");
+    assert.equal((await fetch(`${base}/`)).headers.get("access-control-allow-origin"), null);
+  }, { accessKey: "0123456789abcdef" });
+});
+
 test("tidy needs a map with nodes", async () => {
   await withServer(async () => ({}), async (base) => {
     const tidy = (map) => fetch(`${base}/api/tidy`, { method: "POST", body: JSON.stringify({ map }) });

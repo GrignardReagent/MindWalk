@@ -131,8 +131,10 @@ footer {
 #lock > div { display: grid; gap: 12px; width: min(340px, 100%); }
 #lock strong { font: 800 24px/1.25 var(--display); }
 #lock span { color: var(--muted); }
-#lockKey { min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; color: inherit; }
+#lockKey, #lockServer { min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; color: inherit; }
 #lock button { min-height: 48px; border: 0; border-radius: 8px; background: var(--accent); color: var(--on-accent); font-weight: 700; }
+#lock #lockCancel { border: 1px solid var(--line); background: none; color: var(--ink); font-weight: 500; }
+#settings { margin: 14px 0 0 8px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: none; }
 #lock #lockError { min-height: 22px; color: var(--accent); font-weight: 600; }
 @media (min-width: 720px) { #mic { min-height: 64px; } .node { max-width: 170px; } }
 @media (prefers-reduced-motion: no-preference) {
@@ -155,7 +157,7 @@ footer {
 
 <main>
   <div id="mapView"><div id="stage"><svg id="links" aria-hidden="true"></svg></div></div>
-  <div id="outlineView" hidden><ul id="outline"></ul><button id="copy" type="button" data-i18n="copy"></button></div>
+  <div id="outlineView" hidden><ul id="outline"></ul><button id="copy" type="button" data-i18n="copy"></button><button id="settings" type="button" hidden data-i18n="settings"></button></div>
   <div id="empty" hidden><div><strong data-i18n="emptyTitle"></strong><span data-i18n="emptyBody"></span></div></div>
 </main>
 
@@ -199,8 +201,10 @@ footer {
   <div>
     <strong data-i18n="lockTitle"></strong>
     <span data-i18n="lockBody"></span>
+    <input id="lockServer" type="url" inputmode="url" autocomplete="url" autocapitalize="off" spellcheck="false" hidden>
     <input id="lockKey" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false">
     <button type="submit" data-i18n="unlock"></button>
+    <button id="lockCancel" type="button" hidden data-i18n="cancel"></button>
     <span id="lockError" role="alert"></span>
   </div>
 </form>
@@ -213,6 +217,9 @@ footer {
   const KEY = "mindwalk.map.v1";
   const LANG = "mindwalk.lang";
   const ACCESS = "mindwalk.key";
+  const SERVER = "mindwalk.server";
+  // In the Android app the page is bundled, so API calls go to a saved server address.
+  const native = Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const SPEECH = "mindwalk.speech";
   const BRANCHES = 5;
 
@@ -251,6 +258,9 @@ footer {
       undo: "撤销", undone: "已撤销",
       lockTitle: "输入访问密钥", lockBody: "密钥只存在这台手机上，只需输入一次。", lockPlaceholder: "访问密钥", unlock: "进入",
       lockWrong: "密钥不对，再试一次。", lockOffline: "连不上服务器，检查网络后再试。",
+      appLockTitle: "连接你的服务器", appLockBody: "填你部署的网址（例如 mindwalk.onrender.com）和访问密钥。只需填一次。",
+      serverPlaceholder: "服务器网址", lockBadServer: "这个网址连不上，或者不是 MindWalk 服务器。", settings: "连接设置", cancel: "取消",
+      recordingApp: "可以锁屏放进口袋，通知栏会显示正在录音。结束时会告诉你有没有漏录。",
     },
     en: {
       switchTo: "中文", switchLabel: "切换到中文", defaultTitle: "My ideas",
@@ -281,6 +291,9 @@ footer {
       undo: "Undo", undone: "Undone",
       lockTitle: "Enter access key", lockBody: "The key is kept on this phone, so you only enter it once.", lockPlaceholder: "Access key", unlock: "Unlock",
       lockWrong: "That key is wrong. Try again.", lockOffline: "Can't reach the server. Check your connection and try again.",
+      appLockTitle: "Connect to your server", appLockBody: "Enter the address you deployed (like mindwalk.onrender.com) and the access key. You only do this once.",
+      serverPlaceholder: "Server address", lockBadServer: "Can't reach that address, or it isn't a MindWalk server.", settings: "Connection", cancel: "Cancel",
+      recordingApp: "You can lock your phone and pocket it; the notification bar shows it's recording. You'll be told if anything was missed.",
     },
   };
 
@@ -293,6 +306,13 @@ footer {
   const savedSpeech = store.get(SPEECH) === "auto" ? "mix" : store.get(SPEECH);
   let speechLang = ["zh", "en", "mix"].includes(savedSpeech) ? savedSpeech : lang;
   let accessKey = store.get(ACCESS) || "";
+  let serverUrl = native ? store.get(SERVER) || "" : "";
+  const apiUrl = (path, base = serverUrl) => (native ? `${base}/${path}` : path);
+  // "mindwalk.onrender.com/" -> "https://mindwalk.onrender.com"
+  const normalizeServer = (text) => {
+    const trimmed = text.trim().replace(/\/+$/, "");
+    return !trimmed || /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
   // A link like https://…/#key=… unlocks the page once; the fragment never reaches the server.
   const keyInLink = location.hash.match(/[#&]key=([^&]+)/);
   if (keyInLink) {
@@ -364,7 +384,11 @@ footer {
 
   // Every server call carries the access key. A 401 brings up the key screen.
   async function api(path, options = {}) {
-    const res = await fetch(path, { ...options, headers: { ...options.headers, "x-access-key": encodeURIComponent(accessKey) } });
+    if (native && !serverUrl) {
+      showLock();
+      throw { code: "locked" };
+    }
+    const res = await fetch(apiUrl(path), { ...options, headers: { ...options.headers, "x-access-key": encodeURIComponent(accessKey) } });
     if (res.status === 401) {
       showLock();
       throw { code: "locked" };
@@ -645,7 +669,8 @@ footer {
 
     heard = [];
     renderLive();
-    $("focusNote").textContent = t(isIOS ? "recordingIOS" : "recordingLock");
+    if (native) window.Capacitor.nativePromise("Recording", "start", {}).catch(() => {});
+    $("focusNote").textContent = t(native ? "recordingApp" : isIOS ? "recordingIOS" : "recordingLock");
     $("focusHint").textContent = t("focusHint");
     $("focus").hidden = false;
     $("focus").dataset.on = "1";
@@ -675,6 +700,7 @@ footer {
     await Promise.all([closeSegment(session.segment), session.closing]);
     session.stream.getTracks().forEach((track) => track.stop());
     if (session.context) session.context.close().catch(() => {});
+    if (native) window.Capacitor.nativePromise("Recording", "stop", {}).catch(() => {});
     await uploadClips();
     closeFocus();
     flush();
@@ -777,6 +803,11 @@ footer {
     $("speechLang").setAttribute("aria-label", t("speechLabel"));
     $("speechLang").value = speechLang;
     $("lockKey").placeholder = t("lockPlaceholder");
+    $("lockServer").placeholder = t("serverPlaceholder");
+    if (native) {
+      $("lock").querySelector("strong").textContent = t("appLockTitle");
+      $("lock").querySelector("span").textContent = t("appLockBody");
+    }
     $("liveText").dataset.placeholder = t("livePlaceholder");
     renderControls();
     showStatus();
@@ -787,6 +818,8 @@ footer {
     $("mic").hidden = !recordingUsable;
     $("uploadLabel").hidden = !serverMode;
     $("speechLang").hidden = !serverMode;
+    $("settings").hidden = !native;
+    $("lockServer").hidden = !native;
     $("note").placeholder = t(recordingUsable ? "placeholderTyped" : "placeholderKeyboard");
   }
 
@@ -926,10 +959,13 @@ footer {
     render();
   }
 
-  function showLock() {
+  function showLock(fromSettings = false) {
     if (recording) return; // Asked again once the recording ends.
+    $("lockServer").value = serverUrl;
+    $("lockCancel").hidden = !fromSettings;
+    $("lockError").textContent = "";
     $("lock").hidden = false;
-    $("lockKey").focus();
+    (native && !serverUrl ? $("lockServer") : $("lockKey")).focus();
   }
 
   function openSheet(n) {
@@ -1049,19 +1085,27 @@ footer {
   });
   $("lock").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const key = $("lockKey").value.trim();
-    if (!key) return;
-    const res = await fetch("api/auth", { headers: { "x-access-key": encodeURIComponent(key) } }).catch(() => null);
-    if (!res || (!res.ok && res.status !== 401)) { $("lockError").textContent = t("lockOffline"); return; }
+    const key = $("lockKey").value.trim() || (native ? accessKey : "");
+    const base = native ? normalizeServer($("lockServer").value) : "";
+    if (!key || (native && !base)) return;
+    const res = await fetch(apiUrl("api/auth", base), { headers: { "x-access-key": encodeURIComponent(key) } }).catch(() => null);
+    if (!res || (!res.ok && res.status !== 401)) { $("lockError").textContent = t(native ? "lockBadServer" : "lockOffline"); return; }
     if (res.status === 401) { $("lockError").textContent = t("lockWrong"); return; }
     accessKey = key;
     store.set(ACCESS, key);
+    if (native) {
+      serverUrl = base;
+      store.set(SERVER, base);
+    }
     $("lock").hidden = true;
     $("lockKey").value = "";
     $("lockError").textContent = "";
     await uploadClips();
     flush();
   });
+
+  $("settings").addEventListener("click", () => showLock(true));
+  $("lockCancel").addEventListener("click", () => { $("lock").hidden = true; });
 
   $("lang").addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";

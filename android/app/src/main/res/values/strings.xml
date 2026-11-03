@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MindWalk</string>
+    <string name="title_activity_main">MindWalk</string>
+    <string name="package_name">io.github.grignardreagent.mindwalk</string>
+    <string name="custom_url_scheme">io.github.grignardreagent.mindwalk</string>
+    <string name="recording_channel">Recording</string>
+    <string name="recording_title">MindWalk is recording</string>
+    <string name="recording_text">Tap to open. Stop recording in the app.</string>
+</resources>

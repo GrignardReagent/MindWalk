@@ -1,0 +1,73 @@
+# Builds the Android app. On main, the APK is published as the latest release:
+# https://github.com/<owner>/<repo>/releases/latest/download/MindWalk.apk
+name: Android app
+
+on:
+  push:
+    paths:
+      - "app/**"
+      - "android/**"
+      - "server.mjs"
+      - "scripts/build-app.mjs"
+      - "capacitor.config.json"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Optional. Without these, each build has a different signature and
+      # updating means uninstalling the old app first. See the README.
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      MINDWALK_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:app
+
+      - name: Use the signing key from secrets
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/mindwalk.keystore"
+          echo "MINDWALK_KEYSTORE=$RUNNER_TEMP/mindwalk.keystore" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - run: cp android/app/build/outputs/apk/release/app-release.apk MindWalk.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MindWalk-apk
+          path: MindWalk.apk
+
+      - name: Publish as the latest release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-1.0.${{ github.run_number }}
+          name: MindWalk Android 1.0.${{ github.run_number }}
+          body: 在安卓手机上下载 MindWalk.apk 并安装。设置了签名密钥（见 README）时，新版直接覆盖安装，数据保留。
+          files: MindWalk.apk
+          make_latest: true
